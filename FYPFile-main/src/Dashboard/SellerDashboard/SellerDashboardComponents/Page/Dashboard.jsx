@@ -54,10 +54,10 @@ const fetchProducts = () => {
       status: item.status,
     }));
     if(setProducts(formattedData)){
-    message.success("Mock products loaded successfully!");
+    message.success("Products loaded successfully!");
   }
   else {
-    message.success("Not successfully loaded!");
+    message.success("Product not successfully loaded!");
   }
 };
 
