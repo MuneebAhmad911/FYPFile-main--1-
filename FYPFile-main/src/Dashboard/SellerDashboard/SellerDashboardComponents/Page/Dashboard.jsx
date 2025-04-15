@@ -17,6 +17,7 @@ import {
 import { Table, Input, Button, Select, Form, message } from "antd";
 import { useState, useEffect } from "react";
 import Orders from "./Orders";
+import axios from "axios";
 
 const { Option } = Select;
 
@@ -40,42 +41,50 @@ const Dashboard = () => {
   const [products, setProducts] = useState([]);
   const [form] = Form.useForm();
 
-const fetchProducts = () => {
-    const mockData = [
-      { name: "Alice", product: "Laptop", status: "Completed" },
-      { name: "Bob", product: "Smartphone", status: "Pending" },
-      { name: "Charlie", product: "Tablet", status: "Completed" },
-    ];
-  
-    const formattedData = mockData.map((item, index) => ({
-      key: index + 1,
-      name: item.name,
-      product: item.product,
-      status: item.status,
-    }));
-    if(setProducts(formattedData)){
-    message.success("Products loaded successfully!");
-  }
-  else {
-    message.success("Product not successfully loaded!");
-  }
-};
+  // Fetch products from backend
+  const fetchProducts = async () => {
+    try {
+      const res = await axios.get("http://localhost:5000/api/products");
+      setProducts(
+        res.data.map((product, index) => ({
+          key: index + 1,
+          ...product,
+        }))
+      );
+    } catch (error) {
+      message.error("Failed to fetch products");
+    }
+  };
 
-  const handleAddProduct = (values) => {
-    const newProduct = {
-      key: products.length + 1,
-      ...values,
-    };
-    setProducts([...products, newProduct]);
-    form.resetFields();
-    message.success("Product added successfully!");
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  // Add product handler with backend call
+  const handleAddProduct = async (values) => {
+    try {
+      await axios.post("http://localhost:5000/api/products", {
+        title: values.title,
+        brand: values.brand,
+        price: Number(values.price),
+        stockQuantity: Number(values.stockQuantity),
+        category: values.category,
+      });
+      message.success("Product added successfully!");
+      form.resetFields();
+      fetchProducts(); // Refresh product list
+    } catch (error) {
+      message.error("Failed to add product");
+    }
   };
 
   const columns = [
     { title: "SNo", dataIndex: "key", key: "key" },
-    { title: "Name", dataIndex: "name", key: "name" },
-    { title: "Product", dataIndex: "product", key: "product" },
-    { title: "Status", dataIndex: "status", key: "status" },
+    { title: "Title", dataIndex: "title", key: "title" },
+    { title: "Brand", dataIndex: "brand", key: "brand" },
+    { title: "Price", dataIndex: "price", key: "price" },
+    { title: "Stock Quantity", dataIndex: "stockQuantity", key: "stockQuantity" },
+    { title: "Category", dataIndex: "category", key: "category" },
   ];
 
   return (
@@ -90,7 +99,7 @@ const fetchProducts = () => {
         Dashboard
       </h3>
 
-      {/* First Row: Pie and Bar Chart */}
+      {/* Pie and Bar Chart */}
       <div style={{ display: "flex", gap: "20px", marginBottom: "32px" }}>
         <div
           style={{
@@ -149,7 +158,7 @@ const fetchProducts = () => {
         </div>
       </div>
 
-      {/* Second Row: Income vs Expense */}
+      {/* Line Chart */}
       <div
         style={{
           backgroundColor: "#ffffff",
@@ -168,13 +177,13 @@ const fetchProducts = () => {
             <YAxis />
             <Tooltip />
             <Legend />
-            <Line type="monotone" dataKey="income" stroke="#4CAF50" strokeWidth={2} name="Income" />
-            <Line type="monotone" dataKey="expense" stroke="#FF5722" strokeWidth={2} name="Expense" />
+            <Line type="monotone" dataKey="income" stroke="#4CAF50" strokeWidth={2} />
+            <Line type="monotone" dataKey="expense" stroke="#FF5722" strokeWidth={2} />
           </LineChart>
         </ResponsiveContainer>
       </div>
 
-      {/* Third Row: Area Chart */}
+      {/* Area Chart */}
       <div style={{ display: "flex", gap: "20px", marginBottom: "32px" }}>
         <div
           style={{
@@ -199,14 +208,12 @@ const fetchProducts = () => {
                 dataKey="income"
                 stroke="#4CAF50"
                 fill="#4CAF50"
-                name="Income"
               />
               <Area
                 type="monotone"
                 dataKey="expense"
                 stroke="#FF5722"
                 fill="#FF5722"
-                name="Expense"
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -220,7 +227,7 @@ const fetchProducts = () => {
           padding: "24px",
           borderRadius: "12px",
           boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
-          marginBottom: "16px",
+          marginBottom: "32px",
         }}
       >
         <h3 style={{ fontSize: "20px", fontWeight: "600", marginBottom: "16px" }}>
@@ -228,44 +235,62 @@ const fetchProducts = () => {
         </h3>
         <Form form={form} layout="inline" onFinish={handleAddProduct}>
           <Form.Item
-            name="name"
-            rules={[{ required: true, message: "Please enter customer name" }]}
+            name="title"
+            rules={[{ required: true, message: "Please enter product title" }]}
           >
-            <Input placeholder="Customer Name" />
+            <Input placeholder="Product Title" />
           </Form.Item>
           <Form.Item
-            name="product"
-            rules={[{ required: true, message: "Please enter product name" }]}
+            name="brand"
+            rules={[{ required: true, message: "Please select brand" }]}
           >
-            <Input placeholder="Product Name" />
+            <Select placeholder="Select Brand" style={{ width: 150 }}>
+              <Option value="Apple">Apple</Option>
+              <Option value="Samsung">Samsung</Option>
+              <Option value="Sony">Sony</Option>
+              <Option value="Dell">Dell</Option>
+              <Option value="HP">HP</Option>
+              <Option value="Nike">Nike</Option>
+              <Option value="Adidas">Adidas</Option>
+              <Option value="Puma">Puma</Option>
+            </Select>
           </Form.Item>
           <Form.Item
-            name="status"
-            rules={[{ required: true, message: "Please select status" }]}
+            name="price"
+            rules={[{ required: true, message: "Please enter price" }]}
           >
-            <Select placeholder="Select Status" style={{ width: 150 }}>
-              <Option value="Completed">Completed</Option>
-              <Option value="Pending">Pending</Option>
+            <Input placeholder="Price" />
+          </Form.Item>
+          <Form.Item
+            name="stockQuantity"
+            rules={[{ required: true, message: "Please enter stock quantity" }]}
+          >
+            <Input placeholder="Stock Quantity" />
+          </Form.Item>
+          <Form.Item
+            name="category"
+            rules={[{ required: true, message: "Please select category" }]}
+          >
+            <Select placeholder="Select Category" style={{ width: 150 }}>
+              <Option value="Electronics">Electronics</Option>
+              <Option value="Fashion">Fashion</Option>
+              <Option value="Home Appliances">Home Appliances</Option>
+              <Option value="Health & Beauty">Health & Beauty</Option>
+              <Option value="Sports & Outdoors">Sports & Outdoors</Option>
+              <Option value="Automotive">Automotive</Option>
+              <Option value="Toys & Games">Toys & Games</Option>
+              <Option value="Groceries">Groceries</Option>
             </Select>
           </Form.Item>
           <Form.Item>
-            <Button type="primary" htmlType="submit">
+            <Button className="mt-2" type="primary" htmlType="submit">
               Add Product
             </Button>
           </Form.Item>
         </Form>
-
-        {/* Manual Fetch Button */}
-        <Button
-          type="dashed"
-          onClick={fetchProducts}
-          style={{ marginTop: "16px" }}
-        >
-          Fetch Products
-        </Button>
       </div>
 
-      {/* Display Updated Product List */}
+      {/* Product List Table */}
       <div
         style={{
           backgroundColor: "#ffffff",
@@ -281,7 +306,7 @@ const fetchProducts = () => {
         <Table columns={columns} dataSource={products} pagination={{ pageSize: 5 }} />
       </div>
 
-      {/* Original Orders Table */}
+      {/* Orders Component */}
       <Orders />
     </div>
   );
